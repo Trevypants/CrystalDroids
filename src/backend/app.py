@@ -3,6 +3,7 @@
 from typing import Any
 import logging
 
+from pydantic import BaseModel
 from litestar import Litestar, get, post
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
@@ -23,6 +24,12 @@ PROJECT_ID = "qwiklabs-gcp-01-497878f334ed"
 LOCATION = "europe-west4"
 # MODEL_ID = "gemini-1.5-pro-preview-0409"
 MODEL_ID = "gemini-1.0-pro-002"
+
+
+class Message(BaseModel):
+    user_id: str
+    message: str
+
 
 pdf_file = Part.from_uri(
     "gs://rituals-solve-with-g/info.pdf", mime_type="application/pdf"
@@ -117,16 +124,14 @@ def sync_root() -> dict[str, Any]:
 
 
 @post("/chat")
-async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
+async def chat(state: State, message: Message) -> dict[str, str]:
     """Route Handler that starts/continues a chat with a user.
 
     Parameters
     ----------
     state : State
         The state of the application.
-    user_id : str
-        The user ID.
-    message : str
+    message : Message
         The message from the user.
 
     Returns
@@ -138,7 +143,7 @@ async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
     db: firestore.Client = app.state.db
 
     conversations_ref = db.collection("conversations")
-    doc_ref = conversations_ref.document(user_id)
+    doc_ref = conversations_ref.document(message.user_id)
 
     try:
         # Attempt to retrieve the existing conversation
@@ -147,19 +152,23 @@ async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
             print("Conversation Found")
             conversation_data = doc.to_dict()
             conversation_data["history"].append(
-                {"role": "user", "parts": [{"text": f"{message}"}]}
+                {"role": "user", "parts": [{"text": f"{message.message}"}]}
             )
         else:
             print("Conversation Not Found")
             conversation_data = {
-                "history": [{"role": "user", "parts": [{"text": f"START. {message}"}]}],
+                "history": [
+                    {"role": "user", "parts": [{"text": f"START. {message.message}"}]}
+                ],
                 "created": firestore.SERVER_TIMESTAMP,
                 "updated": firestore.SERVER_TIMESTAMP,
             }  # Start a fresh conversation
     except Exception as e:
         print(f"Error loading conversation: {e}")
         conversation_data = {
-            "history": [{"role": "user", "parts": [{"text": f"START. {message}"}]}],
+            "history": [
+                {"role": "user", "parts": [{"text": f"START. {message.message}"}]}
+            ],
             "created": firestore.SERVER_TIMESTAMP,
             "updated": firestore.SERVER_TIMESTAMP,
         }
@@ -176,7 +185,7 @@ async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
     # Update Firestore
     doc_ref.set(conversation_data)
 
-    if "DONE" in response.text or "DONE" in message:
+    if "DONE" in response.text or "DONE" in message.message:
         # save the summary
         conversation_data["summary"] = response.text
         response_conversion = doctor_fresh.generate_content(
