@@ -111,9 +111,9 @@ def sync_root() -> dict[str, Any]:
     return {"hello": "world"}
 
 
-@post("/start-chat/{user_id}")
-async def start_chat(state: State, user_id: str) -> dict[str, str]:
-    """Route Handler that starts a chat with a user.
+@post("/chat")
+async def chat(state: State, user_id: str) -> dict[str, str]:
+    """Route Handler that starts/continues a chat with a user.
 
     Parameters
     ----------
@@ -136,6 +136,7 @@ app = Litestar(
     route_handlers=[
         root,
         sync_root,
+        chat,
     ],
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],
