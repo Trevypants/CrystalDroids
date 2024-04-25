@@ -19,4 +19,5 @@ def sync_hello_world() -> dict[str, Any]:
     return {"hello": "world"}
 
 
+# Here is the app
 app = Litestar(route_handlers=[sync_hello_world, async_hello_world])
