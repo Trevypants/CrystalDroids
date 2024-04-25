@@ -19,6 +19,7 @@ function sendMessage() {
   displayMessage('You', message);
 
   // Send POST request to your Gen AI API endpoint 
+  console.log('userId', userId, 'message', message);
   fetch('https://crystaldroids-api-k7ji6xt3vq-ez.a.run.app/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

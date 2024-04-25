@@ -55,7 +55,8 @@ jobs:
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 8000 \
           --quiet \
-          --allow-unauthenticated
+          --allow-unauthenticated \ 
+          --min-instances 1
 
       - name: Deploy Frontend to Cloud Run
         run: |-
@@ -66,4 +67,5 @@ jobs:
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
           --quiet \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --min-instances 1

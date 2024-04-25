@@ -5,6 +5,7 @@ import logging
 
 from litestar import Litestar, get, post
 from litestar.datastructures import State
+from litestar.config.cors import CORSConfig
 
 from google.cloud import firestore, aiplatform
 import vertexai.preview as vertex_ai
@@ -25,6 +26,10 @@ MODEL_ID = "gemini-1.0-pro-002"
 
 pdf_file = Part.from_uri(
     "gs://rituals-solve-with-g/info.pdf", mime_type="application/pdf"
+)
+
+cors_config = CORSConfig(
+    allow_origins=["https://crystaldroids-ui-k7ji6xt3vq-ez.a.run.app"]
 )
 
 # Set model parameters
@@ -147,4 +152,5 @@ app = Litestar(
     ],
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],
+    cors_config=cors_config,
 )
