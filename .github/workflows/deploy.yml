@@ -37,19 +37,19 @@ jobs:
 
       - name: Build and tag the docker images
         run: |-
-          docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA . 
-          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA . 
+          docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA_backend . 
+          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA_frontend . 
 
       - name: Push the images to the Google Artifact Registry (GAR)
         run: |-
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA_backend
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA_frontend
 
       - name: Deploy Backend to Cloud Run
         run: |-
           gcloud run deploy $APP_NAME \
           --region $REGION \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA_backend \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 8000 \
@@ -59,7 +59,7 @@ jobs:
         run: |-
           gcloud run deploy $APP_NAME \
           --region $REGION \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA_frontend \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
