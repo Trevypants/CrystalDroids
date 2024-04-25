@@ -117,7 +117,7 @@ def sync_root() -> dict[str, Any]:
 
 
 @post("/chat")
-async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
+async def chat(state: State, user_id: str, message: str = "START") -> dict[str, str]:
     """Route Handler that starts/continues a chat with a user.
 
     Parameters
@@ -134,9 +134,52 @@ async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
     dict[str, str]
         The response.
     """
-    model: GenerativeModel = app.state.model
+    doctor_fresh: GenerativeModel = app.state.model
+    db: firestore.Client = app.state.db
 
-    resp = model.generate_content(
+    conversations_ref = db.collection("conversations")
+    doc_ref = conversations_ref.document(user_id)
+
+    # try:
+    #     # Attempt to retrieve the existing conversation
+    #     doc = doc_ref.get()
+    #     if doc.exists:
+    #         print("Conversation Found")
+    #         conversation_data = doc.to_dict()
+    #     else:
+    #         print("Conversation Not Found")
+    #         conversation_data = {
+    #             "history": [],
+    #             "created": firestore.SERVER_TIMESTAMP,
+    #             "updated": firestore.SERVER_TIMESTAMP,
+    #         }  # Start a fresh conversation
+    # except Exception as e:
+    #     print(f"Error loading conversation: {e}")
+    #     conversation_data = {
+    #         "history": [],
+    #         "created": firestore.SERVER_TIMESTAMP,
+    #         "updated": firestore.SERVER_TIMESTAMP,
+    #     }
+
+    # current_prompt = "START"
+    # conversation_data["history"].append(
+    #     {"role": "user", "parts": [{"text": current_prompt}]}
+    # )
+    # response = doctor_fresh.generate_content(
+    #     conversation_data["history"],
+    #     generation_config=generation_config,
+    #     safety_settings=safety_settings,
+    # )
+    # conversation_data["history"].append(
+    #     {"role": "model", "parts": [{"text": response.text}]}
+    # )
+    # print(f"model: {response.text}")
+
+    # # Update Firestore
+    # doc_ref.set(conversation_data)
+    # response_text = ""
+
+    resp = doctor_fresh.generate_content(
         ["Tell me a joke."],
         generation_config=generation_config,
         safety_settings=safety_settings,
