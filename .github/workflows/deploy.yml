@@ -35,24 +35,32 @@ jobs:
       - name: Authorize Docker push
         run: gcloud auth configure-docker $REGION-docker.pkg.dev
 
-      - name: Build and tag the docker image
+      - name: Build and tag the docker images
         run: |-
-          docker build -f Dockerfile --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA . 
+          docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA . 
+          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA . 
 
-      - name: Push the image to the Google Artifact Registry (GAR)
+      - name: Push the images to the Google Artifact Registry (GAR)
         run: |-
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA
 
-      # - name: Build and push the Docker image
-      #   run: |-
-      #     gcloud builds submit . --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA
-
-      - name: Deploy
+      - name: Deploy Backend to Cloud Run
         run: |-
           gcloud run deploy $APP_NAME \
           --region $REGION \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME:$GITHUB_SHA \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_backend:$GITHUB_SHA \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 8000 \
+          --quiet
+
+      - name: Deploy Frontend to Cloud Run
+        run: |-
+          gcloud run deploy $APP_NAME \
+          --region $REGION \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA \
+          --platform "managed" \
+          --service-account $SERVICE_ACCOUNT_EMAIL \
+          --port 80 \
           --quiet
