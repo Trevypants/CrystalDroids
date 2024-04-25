@@ -129,7 +129,12 @@ async def chat(state: State, user_id: str) -> dict[str, str]:
     """
     model: GenerativeModel = app.state.model
 
-    return {"response": f"Chat started with user {user_id}"}
+    resp = model.generate_content(
+        ["Tell me a joke."],
+        generation_config=generation_config,
+        safety_settings=safety_settings,
+    )
+    return {"response": f"Chat started with user {user_id}. Joke: {resp.text}"}
 
 
 app = Litestar(
