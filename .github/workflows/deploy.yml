@@ -56,7 +56,6 @@ jobs:
           --port 8000 \
           --quiet \
           --allow-unauthenticated \ 
-          --min-instances 1
 
       - name: Deploy Frontend to Cloud Run
         run: |-
@@ -68,4 +67,3 @@ jobs:
           --port 80 \
           --quiet \
           --allow-unauthenticated \
-          --min-instances 1
