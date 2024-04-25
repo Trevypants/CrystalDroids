@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy Backend to Cloud Run
         run: |-
-          gcloud run deploy $APP_NAME \
+          gcloud run deploy $APP_NAME_BACKEND \
           --region $REGION \
           --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_BACKEND:$GITHUB_SHA \
           --platform "managed" \
@@ -59,7 +59,7 @@ jobs:
 
       - name: Deploy Frontend to Cloud Run
         run: |-
-          gcloud run deploy $APP_NAME \
+          gcloud run deploy $APP_NAME_FRONTEND \
           --region $REGION \
           --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_FRONTEND:$GITHUB_SHA \
           --platform "managed" \
