@@ -3,7 +3,9 @@
 from typing import Any
 import logging
 
-from litestar import Litestar, get
+from litestar import Litestar, get, post
+from litestar.datastructures import State
+
 from google.cloud import firestore, aiplatform
 import vertexai.preview as vertex_ai
 from vertexai.preview.generative_models import (
@@ -64,7 +66,7 @@ async def app_startup(app: Litestar):
 
     # Initialize model
     logging.info("Initializing model...")
-    vertex_ai.init(project=PROJECT_ID, location=LOCATION)
+    # vertex_ai.init(project=PROJECT_ID, location=LOCATION)
 
     # Load a model with system instructions
     app.state.model = GenerativeModel(
@@ -107,6 +109,27 @@ async def root() -> dict[str, Any]:
 def sync_root() -> dict[str, Any]:
     """Route Handler that outputs hello world."""
     return {"hello": "world"}
+
+
+@post("/start-chat/{user_id}")
+async def start_chat(state: State, user_id: str) -> dict[str, str]:
+    """Route Handler that starts a chat with a user.
+
+    Parameters
+    ----------
+    state : State
+        The state of the application.
+    user_id : str
+        The user ID.
+
+    Returns
+    -------
+    dict[str, str]
+        The response.
+    """
+    model: GenerativeModel = app.state.model
+
+    return {"response": f"Chat started with user {user_id}"}
 
 
 app = Litestar(
