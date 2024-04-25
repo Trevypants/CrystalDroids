@@ -30,11 +30,8 @@ COPY --from=builder /tmp/requirements.txt ./requirements.txt
 ## Install the backend dependencies
 RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requirements.txt
 
-## Set the working directory to /src
-WORKDIR /src
-
 ## Copy only the necessary files to the working directory
-COPY ./src /src
+COPY . .
 
 ## Expose the port the app runs on
 EXPOSE 8000
