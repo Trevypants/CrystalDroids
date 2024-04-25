@@ -2,11 +2,19 @@
 name = "crystaldroids"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = [
+    "Trevor Visser <trevor.visser@crystalloids.com>",
+    "Nora Oostrom <nora.oostrom@crystalloids.com>",
+    "Ibrahim Atli <ibrahim.atli@crystalloids.com>",
+]
 readme = "README.md"
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+google-cloud-aiplatform = "^1.48.0"
+google-cloud-firestore = "^2.16.0"
+litestar = { extras = ["standard"], version = "^2.8.2" }
 
 
 [build-system]
