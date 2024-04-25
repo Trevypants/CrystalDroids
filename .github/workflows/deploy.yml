@@ -39,7 +39,7 @@ jobs:
       - name: Build and tag the docker images
         run: |-
           docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_BACKEND:$GITHUB_SHA . 
-          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_frontend:$GITHUB_SHA . 
+          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_FRONTEND:$GITHUB_SHA . 
 
       - name: Push the images to the Google Artifact Registry (GAR)
         run: |-
@@ -54,7 +54,8 @@ jobs:
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 8000 \
-          --quiet
+          --quiet \
+          --allow-unauthenticated
 
       - name: Deploy Frontend to Cloud Run
         run: |-
@@ -64,4 +65,5 @@ jobs:
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
-          --quiet
+          --quiet \
+          --allow-unauthenticated
