@@ -25,7 +25,7 @@ function sendMessage() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId, message: message })
   })
-  const data = response.json()
+  const data = response;
   console.log(data)
 
   // Display AI response
