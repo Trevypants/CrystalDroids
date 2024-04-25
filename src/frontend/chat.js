@@ -26,7 +26,7 @@ function sendMessage() {
     body: JSON.stringify({ user_id: userId, message: message })
   })
     .then(response => response.json())
-    .then(data => displayMessage('AI', data.response));
+    .then(data => displayMessage('AI', JSON.stringify(data.response)));
 }
 
 function displayMessage(sender, message) {
