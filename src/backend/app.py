@@ -112,7 +112,7 @@ def sync_root() -> dict[str, Any]:
 
 
 @post("/chat")
-async def chat(state: State, user_id: str) -> dict[str, str]:
+async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
     """Route Handler that starts/continues a chat with a user.
 
     Parameters
@@ -121,6 +121,8 @@ async def chat(state: State, user_id: str) -> dict[str, str]:
         The state of the application.
     user_id : str
         The user ID.
+    message : str
+        The message from the user.
 
     Returns
     -------
