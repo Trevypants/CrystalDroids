@@ -4,7 +4,10 @@
 ######### STAGE BUILD #########
 ###############################
 ## Set the base image using Python 3.12 and Debian Bookworm
-FROM python:3.12-slim-bookworm as builder
+FROM python:3.11-slim as builder
+
+## Set /tmp as the current working directory
+WORKDIR /tmp
 
 ## Install poetry via pip
 RUN pip install --no-cache-dir --force-reinstall poetry==1.8.2
@@ -19,7 +22,7 @@ RUN poetry export -f requirements.txt --output requirements.txt
 ######### STAGE RUN #########
 #############################
 ## Set the base image using Python 3.12 and Debian Bookworm
-FROM python:3.12-slim-bookworm as runtime
+FROM python:3.11-slim as runtime
 
 ## Copy the requirements.txt file from the previous stage to the current stage
 COPY --from=builder /tmp/requirements.txt ./requirements.txt
