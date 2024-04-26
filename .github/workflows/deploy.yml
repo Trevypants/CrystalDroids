@@ -92,7 +92,7 @@ jobs:
 
       - name: Inject the Backend URL into the frontend index.html
         run: |
-          echo "<script>window.BACKEND_URL = '$BACKEND_URL';</script>" >> index.html
+          echo "<script>window.BACKEND_URL = '$BACKEND_URL';</script>" >> ./src/frontend/index.html
   
       - name: Build and tag the frontend docker image
         run: |-
