@@ -41,7 +41,9 @@ async def app_startup(app: Litestar):
     None
     """
     # Initialize Firestore
-    logging.info("Initializing database connections...")
+    logging.info(
+        f"Initializing database connections to {settings.firestore_db} in project {settings.project_id}..."
+    )
     if not getattr(app.state, "db", None):
         app.state.db = firestore.Client(
             project=settings.project_id,
@@ -49,7 +51,7 @@ async def app_startup(app: Litestar):
         )
 
     # Initialize Generative Model
-    logging.info("Initializing model...")
+    logging.info(f"Initializing model {settings.genai_id}...")
     app.state.model = GenerativeModel(
         model_name=settings.genai_id,
         system_instruction=settings.genai_instructions,
@@ -99,17 +101,19 @@ async def chat(state: State, data: UserMessage) -> dict[str, str]:
     conversations_ref = db.collection("conversations")
     doc_ref = conversations_ref.document(data.user_id)
 
+    logging.info(f"Request: {data}")
+
     try:
         # Attempt to retrieve the existing conversation
         doc = doc_ref.get()
         if doc.exists:
-            logging.debug(f"Conversation Found for User ID {data.user_id}")
+            logging.info(f"Conversation Found for User ID {data.user_id}")
             conversation_data = doc.to_dict()
             conversation_data["history"].append(
                 {"role": "user", "parts": [{"text": f"{data.message}"}]}
             )
         else:
-            logging.debug(f"Conversation Not Found for User ID {data.user_id}")
+            logging.info(f"Conversation Not Found for User ID {data.user_id}")
             conversation_data = {
                 "history": [
                     {"role": "user", "parts": [{"text": f"START. {data.message}"}]}
@@ -151,6 +155,7 @@ async def chat(state: State, data: UserMessage) -> dict[str, str]:
         doc_ref.set(conversation_data)
         logging.info("Summary saved.")
 
+    logging.info(f"Response: {response.text}")
     return {"response": response.text}
 
 
