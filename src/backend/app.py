@@ -131,6 +131,7 @@ async def chat(state: State, data: UserMessage) -> dict[str, str]:
             "updated": firestore.SERVER_TIMESTAMP,
         }
 
+    logging.info(f"Generating response for User ID {data.user_id}...")
     response = doctor_fresh.generate_content(
         conversation_data["history"],
         generation_config=settings.genai_config,
@@ -141,6 +142,7 @@ async def chat(state: State, data: UserMessage) -> dict[str, str]:
     )
 
     # Update Firestore
+    logging.info(f"Updating conversation for User ID {data.user_id}...")
     doc_ref.set(conversation_data)
 
     if "DONE" in response.text or "DONE" in data.message:
@@ -153,7 +155,7 @@ async def chat(state: State, data: UserMessage) -> dict[str, str]:
         )
         conversation_data["summary_english"] = response_conversion.text
         doc_ref.set(conversation_data)
-        logging.info("Summary saved.")
+        logging.info(f"Conversation for User ID {data.user_id} is DONE!")
 
     logging.info(f"Response: {response.text}")
     return {"response": response.text}
