@@ -43,7 +43,7 @@ jobs:
             gcloud firestore databases create --database=$FIRESTORE_DB --location=$REGION
           fi
 
-      - name: Create Artifact Registry (if not exists)
+      - name: Create Artifact Registry (if it does not exists)
         run: |-
           existing_repositories=$(gcloud artifacts repositories list --location=$REGION --format="value(name)")
           if [[ $existing_repositories != *"$ARTIFACT_REGISTRY"* ]]; then
