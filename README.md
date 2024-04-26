@@ -31,4 +31,10 @@ Requirements:
     - Cloud Run Service Agent
     - AI Platform Admin
 3. The service account key in JSON format (stored as a repository secret in `GCP_SERVICE_ACCOUNT_KEY`)
-4. Any other variables edited in the repository variables.
+4. The following repository variables set:
+    - `GCP_REGION` (e.g. `europe-west4`)
+    - `GCP_ARTIFACT_REGISTRY` (e.g. `my-artifact-registry`)
+    - `GCP_BUCKET_SUFFIX` (e.g. `my-bucket-suffix`)
+    - `GCP_FIRESTORE_DB` (e.g. `my-firestore-db`)
+    - `GCP_BACKEND_APP` (e.g. `my-backend-app`)
+    - `GCP_FRONTEND_APP` (e.g. `my-frontend-app`)
