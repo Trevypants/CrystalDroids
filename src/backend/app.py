@@ -8,53 +8,21 @@ from litestar import Litestar, get, post
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
 
-from google.cloud import firestore, aiplatform
-import vertexai.preview as vertex_ai
-from vertexai.preview.generative_models import (
-    GenerationConfig,
-    GenerativeModel,
-    HarmBlockThreshold,
-    HarmCategory,
-    Part,
+from google.cloud import firestore
+from vertexai.preview.generative_models import GenerativeModel
+
+from src.config import settings
+
+logging.basicConfig(
+    level=settings.log_level, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-logging.basicConfig(level=logging.INFO)
 
-PROJECT_ID = "qwiklabs-gcp-01-497878f334ed"
-LOCATION = "europe-west4"
-# MODEL_ID = "gemini-1.5-pro-preview-0409"
-MODEL_ID = "gemini-1.0-pro-002"
+class UserMessage(BaseModel):
+    """Basic POST request model."""
 
-
-class Message(BaseModel):
     user_id: str
     message: str
-
-
-pdf_file = Part.from_uri(
-    "gs://rituals-solve-with-g/info.pdf", mime_type="application/pdf"
-)
-
-cors_config = CORSConfig(
-    allow_origins=["https://crystaldroids-ui-k7ji6xt3vq-ez.a.run.app"]
-)
-
-# Set model parameters
-generation_config = GenerationConfig(
-    temperature=0.7,
-    top_p=1.0,
-    top_k=32,
-    candidate_count=1,
-    max_output_tokens=8192,
-)
-
-# Set safety settings
-safety_settings = {
-    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-}
 
 
 ### STARTUP ###
@@ -72,29 +40,21 @@ async def app_startup(app: Litestar):
     -------
     None
     """
+    # Initialize Firestore
     logging.info("Initializing database connections...")
     if not getattr(app.state, "db", None):
-        app.state.db = firestore.Client(project=PROJECT_ID, database="maxima-conv")
+        app.state.db = firestore.Client(
+            project=settings.project_id,
+            database=settings.firestore_db,
+        )
 
-    # Initialize model
+    # Initialize Generative Model
     logging.info("Initializing model...")
-    # vertex_ai.init(project=PROJECT_ID, location=LOCATION)
-
-    # Load a model with system instructions
     app.state.model = GenerativeModel(
-        MODEL_ID,
-        system_instruction=[
-            "You're a medical healthcare professional AI agent named DoctorFresh.",
-            "You're leading a text conversation with a teenager who is starting treatment for their condition",
-            "Adapt your tone of voice to make the teenager feel comfortable with sharing details, like they're talking to a friend.",
-            "Your first goal is to assess how much the teenager knows about their current situation.",
-            "Your second goal is to gather the information about their personal life, physical and mental symptomes in order to provide the teenager with a heathcare plan.",
-            "The information needs to detailed enough to know the level of severity, ask follow-up questions if needed.",
-            "You initiate the conversation after the initial prompt of 'START' by asking in what language the teenagers want to continue the conversation. Don't provide example languages.",
-            "Keep your responses short and ask one question at a time.",
-            "You continue the conversation until enough details are gathered to provide a summary about the teenager's symptomes and personal life",
-            "When the answer contains 'DONE', you follow up with a professional summary of all gathered information in English.",
-        ],
+        model_name=settings.genai_id,
+        system_instruction=settings.genai_instructions,
+        generation_config=settings.genai_config,
+        safety_settings=settings.genai_safety_config,
     )
 
 
@@ -117,64 +77,60 @@ async def root() -> dict[str, Any]:
     return {"hello": "world"}
 
 
-@get("/sync", sync_to_thread=False)
-def sync_root() -> dict[str, Any]:
-    """Route Handler that outputs hello world."""
-    return {"hello": "world"}
-
-
 @post("/chat")
-async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
+async def chat(state: State, data: UserMessage) -> dict[str, str]:
     """Route Handler that starts/continues a chat with a user.
 
     Parameters
     ----------
     state : State
         The state of the application.
-    user_id : str
-        The user ID.
-    message : str
-        The message from the user.
+    data : UserMessage
+        The POST request data.
 
     Returns
     -------
     dict[str, str]
-        The response.
+        The response. Will have the following format: {"response": str}
     """
     doctor_fresh: GenerativeModel = app.state.model
     db: firestore.Client = app.state.db
 
     conversations_ref = db.collection("conversations")
-    doc_ref = conversations_ref.document(user_id)
+    doc_ref = conversations_ref.document(data.user_id)
 
     try:
         # Attempt to retrieve the existing conversation
         doc = doc_ref.get()
         if doc.exists:
-            print("Conversation Found")
+            logging.debug(f"Conversation Found for User ID {data.user_id}")
             conversation_data = doc.to_dict()
             conversation_data["history"].append(
-                {"role": "user", "parts": [{"text": f"{message}"}]}
+                {"role": "user", "parts": [{"text": f"{data.message}"}]}
             )
         else:
-            print("Conversation Not Found")
+            logging.debug(f"Conversation Not Found for User ID {data.user_id}")
             conversation_data = {
-                "history": [{"role": "user", "parts": [{"text": f"START. {message}"}]}],
+                "history": [
+                    {"role": "user", "parts": [{"text": f"START. {data.message}"}]}
+                ],
                 "created": firestore.SERVER_TIMESTAMP,
                 "updated": firestore.SERVER_TIMESTAMP,
             }  # Start a fresh conversation
     except Exception as e:
-        print(f"Error loading conversation: {e}")
+        logging.error(f"Error loading conversation for User ID {data.user_id}: {e}")
         conversation_data = {
-            "history": [{"role": "user", "parts": [{"text": f"START. {message}"}]}],
+            "history": [
+                {"role": "user", "parts": [{"text": f"START. {data.message}"}]}
+            ],
             "created": firestore.SERVER_TIMESTAMP,
             "updated": firestore.SERVER_TIMESTAMP,
         }
 
     response = doctor_fresh.generate_content(
         conversation_data["history"],
-        generation_config=generation_config,
-        safety_settings=safety_settings,
+        generation_config=settings.genai_config,
+        safety_settings=settings.genai_safety_config,
     )
     conversation_data["history"].append(
         {"role": "model", "parts": [{"text": response.text}]}
@@ -183,33 +139,27 @@ async def chat(state: State, user_id: str, message: str) -> dict[str, str]:
     # Update Firestore
     doc_ref.set(conversation_data)
 
-    if "DONE" in response.text or "DONE" in message:
+    if "DONE" in response.text or "DONE" in data.message:
         # save the summary
         conversation_data["summary"] = response.text
         response_conversion = doctor_fresh.generate_content(
             [f"Translate the following text into English: {response.text}"],
-            generation_config=generation_config,
-            safety_settings=safety_settings,
+            generation_config=settings.genai_config,
+            safety_settings=settings.genai_safety_config,
         )
         conversation_data["summary_english"] = response_conversion.text
         doc_ref.set(conversation_data)
-        print("Summary is saved")
+        logging.info("Summary saved.")
 
-    # resp = doctor_fresh.generate_content(
-    #     ["Tell me a joke."],
-    #     generation_config=generation_config,
-    #     safety_settings=safety_settings,
-    # )
     return {"response": response.text}
 
 
 app = Litestar(
     route_handlers=[
         root,
-        sync_root,
         chat,
     ],
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],
-    cors_config=cors_config,
+    cors_config=CORSConfig(allowed_origins=settings.cors_allowed_origins),
 )
