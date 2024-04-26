@@ -37,7 +37,7 @@ jobs:
 
       - name: Create Firestore Database (if it does not exist)
         run: |-
-          existing_databases=$(gcloud firestore databases list --format="value(id)")
+          existing_databases=$(gcloud firestore databases list --format="value(name)")
           if [[ $existing_databases != *"$FIRESTORE_DB"* ]]; then
             echo "Firestore Database '$FIRESTORE_DB' does not exist. Creating..."
             gcloud firestore databases create --database=$FIRESTORE_DB --location=$REGION
