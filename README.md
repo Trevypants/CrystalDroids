@@ -29,6 +29,5 @@ Requirements:
     - Cloud Storage Admin
     - Firestore Admin
     - Service Account User
-    - Storage Admin
 3. The service account key in JSON format (stored as a repository secret in `GCP_SERVICE_ACCOUNT_KEY`)
 4. Any other variables edited in the repository variables.
