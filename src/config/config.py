@@ -52,6 +52,7 @@ class BackendSettings(BaseSettings):
 
     @property
     def genai_instructions(self) -> list[str]:
+        """Get the GenAI model instructions."""
         return [
             "You're a medical healthcare professional AI agent named DoctorFresh.",
             "You're leading a text conversation with a teenager who is starting treatment for their condition",
