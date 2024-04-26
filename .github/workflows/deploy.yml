@@ -92,7 +92,7 @@ jobs:
 
       - name: Inject the Backend URL into the frontend index.html
         run: |
-          sed -i.bak 's|</body>|<script>window.BACKEND_URL = "'$BACKEND_URL'"";</script></body>|' src/frontend/index.html
+          sed -i.bak 's|</body>|<script>window.BACKEND_URL = "'$BACKEND_URL'";</script></body>|' src/frontend/index.html
   
       - name: Build and tag the frontend docker image
         run: |-
