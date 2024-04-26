@@ -34,12 +34,11 @@ class BackendSettings(BaseSettings):
     version: str = VERSION
 
     # GCP Project Settings
-    project_id: str = "qwiklabs-gcp-01-497878f334ed"
-    location: str = "europe-west4"
+    project_id: str = "PROJECT-GOES-HERE"
     # "gemini-1.5-pro-preview-0409" is rate limited to 5 requests per minute so we don't use
     genai_id: str = "gemini-1.0-pro-002"
-    firestore_db: str = "medical-chatbot"
-    pdf_file_uri: str = "gs://rituals-solve-with-g/info.pdf"
+    firestore_db: str = "FIRESTORE-DB-GOES-HERE"
+    cloud_storage_bucket: str = "gs://BUCKET-URI-GOES-HERE"
 
     # GenAI Model Settings
     temperature: float = 0.7
@@ -96,3 +95,8 @@ class BackendSettings(BaseSettings):
     def cors_allowed_origins(self) -> list[str]:
         """Get the CORS allowed origin configuation."""
         return ["*"]
+
+    @property
+    def pdf_file_uri(self) -> str:
+        """Get the PDF file URI."""
+        return f"{self.cloud_storage_bucket}/medical-form.pdf"

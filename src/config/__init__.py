@@ -8,7 +8,7 @@ dotenv_path = os.path.join(
     ".env",
 )
 
-# Load .env file variables
+# Load .env file variables (if they exist, otherwise use what's already in the environment)
 load_dotenv(dotenv_path=dotenv_path)
 
 # Instantiate the Settings class

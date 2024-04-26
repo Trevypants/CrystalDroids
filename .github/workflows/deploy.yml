@@ -8,12 +8,14 @@ on:
 
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
-  APP_NAME_BACKEND: ${{ secrets.GCP_APP_NAME_BACKEND }}
-  APP_NAME_FRONTEND: ${{ secrets.GCP_APP_NAME_FRONTEND }}
-  REGISTRY_NAME: ${{ secrets.GCP_ARTIFACT_REGISTRY }}
   SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  BUCKET_SUFFIX: ${{ vars.GCP_BUCKET_SUFFIX }}
+  ARTIFACT_REGISTRY: ${{ vars.GCP_ARTIFACT_REGISTRY }}
+  FIRESTORE_DB: ${{ vars.GCP_FIRESTORE_DB }}
+  BACKEND_APP: ${{ vars.GCP_BACKEND_APP }}
+  FRONTEND_APP: ${{ vars.GCP_FRONTEND_APP }}
 
 jobs:
   build-and-deploy:
@@ -33,35 +35,74 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
+      - name: Create Firestore Database (if it does not exist)
+        run: |-
+          existing_databases=$(gcloud firestore databases list --format="value(id)")
+          if [[ $existing_databases != *"$FIRESTORE_DB_NAME"* ]]; then
+            echo "Firestore Database '$FIRESTORE_DB_NAME' does not exist. Creating..."
+            gcloud firestore databases create $FIRESTORE_DB_NAME --region=$REGION
+          fi
+
+      - name: Create Artifact Registry (if not exists)
+        run: |-
+          existing_repositories=$(gcloud artifacts repositories list --location=$REGION --format="value(name)")
+          if [[ $existing_repositories != *"$ARTIFACT_REGISTRY_NAME"* ]]; then
+            echo "Artifact Registry '$ARTIFACT_REGISTRY_NAME' does not exist. Creating..."
+            gcloud artifacts repositories create $ARTIFACT_REGISTRY_NAME --repository-format=docker --location=$REGION
+          fi
+
+      - name: Create a GCS bucket (if it does not exist)
+        run: |-
+          existing_buckets=$(gsutil ls)
+          if [[ $existing_buckets != *"$PROJECT_ID-$BUCKET_SUFFIX"* ]]; then
+            echo "Bucket '$PROJECT_ID-$BUCKET_SUFFIX' does not exist. Creating..."
+            gsutil mb -l $REGION gs://$PROJECT_ID-$BUCKET_SUFFIX
+          fi
+
+      - name: Upload the medical-form.pdf to the GCS bucket
+        run: |-
+          gsutil cp medical-form.pdf gs://$PROJECT_ID-$BUCKET_SUFFIX
+
       - name: Authorize Docker push
         run: gcloud auth configure-docker $REGION-docker.pkg.dev
 
-      - name: Build and tag the docker images
+      - name: Build and tag the backend docker image
         run: |-
-          docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_BACKEND:$GITHUB_SHA . 
-          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_FRONTEND:$GITHUB_SHA . 
+          docker build -f Dockerfile.backend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$BACKEND_APP:$GITHUB_SHA . 
 
-      - name: Push the images to the Google Artifact Registry (GAR)
+      - name: Push the backend image to the Google Artifact Registry (GAR)
         run: |-
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_BACKEND:$GITHUB_SHA
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_FRONTEND:$GITHUB_SHA
-
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$BACKEND_APP:$GITHUB_SHA
+ 
       - name: Deploy Backend to Cloud Run
         run: |-
-          gcloud run deploy $APP_NAME_BACKEND \
+          gcloud run deploy $BACKEND_APP \
           --region $REGION \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_BACKEND:$GITHUB_SHA \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$BACKEND_APP:$GITHUB_SHA \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 8000 \
           --quiet \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars=PROJECT_ID=$PROJECT_ID,FIRESTORE_DB=$FIRESTORE_DB,CLOUD_STORAGE_BUCKET=$PROJECT_ID-$BUCKET_SUFFIX
+ 
+      - name: Get the Backend API URL
+        id: get-backend-url
+        run: echo "BACKEND_URL=$(gcloud run services describe $BACKEND_APP --region $REGION --format='value(status.url)')" >> $GITHUB_ENV
+
+      - name: Inject the Backend URL into the frontend index.html
+        run: |
+          echo "<script>window.BACKEND_URL = '$BACKEND_URL';</script>" >> index.html
+  
+      - name: Build and tag the frontend docker image
+        run: |-
+          docker build -f Dockerfile.frontend --tag $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$FRONTEND_APP:$GITHUB_SHA . 
 
       - name: Deploy Frontend to Cloud Run
         run: |-
-          gcloud run deploy $APP_NAME_FRONTEND \
+          gcloud run deploy $FRONTEND_APP \
           --region $REGION \
-          --image $REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$APP_NAME_FRONTEND:$GITHUB_SHA \
+          --image $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$FRONTEND_APP:$GITHUB_SHA \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
