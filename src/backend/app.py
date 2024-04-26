@@ -4,7 +4,7 @@ from typing import Any
 import logging
 
 from pydantic import BaseModel
-from litestar import Litestar, get, post
+from litestar import Litestar, get, post, Request, Response, status_codes
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
 
@@ -23,6 +23,39 @@ class UserMessage(BaseModel):
 
     user_id: str
     message: str
+
+
+def internal_server_error_handler(request: Request, exc: Exception) -> Response:
+    """This function will handle all internal server errors
+
+    Parameters
+    ----------
+    request: Request
+        The request object
+    exc: Exception
+        The exception that was raised
+
+    Returns
+    -------
+    Response
+        The response object
+    """
+    logging.error(
+        {
+            "path": request.url.path,
+            "method": request.method,
+            "query_params": request.query_params,
+            "reason": str(exc),
+        }
+    )
+    # return Response(
+    #     status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
+    #     content={"detail": str(exc)},
+    # )
+    return Response(
+        status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal Server Error"},
+    )
 
 
 ### STARTUP ###
@@ -169,4 +202,7 @@ app = Litestar(
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],
     cors_config=CORSConfig(allow_origins=settings.cors_allow_origins),
+    exception_handlers={
+        status_codes.HTTP_500_INTERNAL_SERVER_ERROR: internal_server_error_handler,
+    },
 )
