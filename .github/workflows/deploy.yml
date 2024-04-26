@@ -40,7 +40,7 @@ jobs:
           existing_databases=$(gcloud firestore databases list --format="value(id)")
           if [[ $existing_databases != *"$FIRESTORE_DB"* ]]; then
             echo "Firestore Database '$FIRESTORE_DB' does not exist. Creating..."
-            gcloud firestore databases create $FIRESTORE_DB --location=$REGION
+            gcloud firestore databases create --database=$FIRESTORE_DB --location=$REGION
           fi
 
       - name: Create Artifact Registry (if not exists)
