@@ -161,5 +161,5 @@ app = Litestar(
     ],
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],
-    cors_config=CORSConfig(allowed_origins=settings.cors_allowed_origins),
+    cors_config=CORSConfig(allow_origins=settings.cors_allowed_origins),
 )

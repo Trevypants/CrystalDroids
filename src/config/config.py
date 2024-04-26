@@ -93,7 +93,7 @@ class BackendSettings(BaseSettings):
         }
 
     @property
-    def cors_allowed_origins(self) -> list[str]:
+    def cors_allow_origins(self) -> list[str]:
         """Get the CORS allowed origin configuation."""
         return ["*"]
 
