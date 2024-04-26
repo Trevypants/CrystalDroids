@@ -24,10 +24,10 @@ Requirements:
 
 1. A Google Cloud Platform project (stored as a repository secret in `GCP_PROJECT_ID`)
 2. A service account with the following permissions (SA email stored as a repository secret in `GCP_SERVICE_ACCOUNT_EMAIL`):
-    - Artifact Registry Administrator
+    - Cloud Datastore Owner
+    - Storage Admin
+    - Artifact Registry Admin
     - Cloud Run Admin
-    - Cloud Storage Admin
-    - Firestore Admin
-    - Service Account User
+    - Cloud Run Service Agent
 3. The service account key in JSON format (stored as a repository secret in `GCP_SERVICE_ACCOUNT_KEY`)
 4. Any other variables edited in the repository variables.
