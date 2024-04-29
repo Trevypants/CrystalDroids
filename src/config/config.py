@@ -34,7 +34,7 @@ class BackendSettings(BaseSettings):
 
     # GCP Project Settings
     project_id: str = "PROJECT-GOES-HERE"
-    location: str = "europe-west4"
+    location: str = "LOCATION-GOES_HERE"
     # "gemini-1.5-pro-preview-0409" is rate limited to 5 requests per minute so we don't use
     genai_id: str = "gemini-1.0-pro-002"
     firestore_db: str = "FIRESTORE-DB-GOES-HERE"

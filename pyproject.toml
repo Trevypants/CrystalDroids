@@ -23,6 +23,7 @@ pydantic-settings = "^2.2.1"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
+version = "0.2.0"
 tag_format = "$version"
 version_scheme = "pep440"
 version_provider = "poetry"
@@ -31,7 +32,7 @@ major_version_zero = true
 version_files = [
     "src/__init__.py:__version__",
     "src/config/config.py:VERSION",
-    "pyproject.toml:tool.poetry.version",
+    "pyproject.toml:^version",
 ]
 
 [build-system]
