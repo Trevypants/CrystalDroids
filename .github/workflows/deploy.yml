@@ -19,7 +19,7 @@ env:
 
 jobs:
   build-and-deploy:
-    if: "startsWith(github.event.head_commit.message, 'bump:')"
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
     name: Setup, Build, and Deploy
     runs-on: ubuntu-latest
     steps:
@@ -91,9 +91,9 @@ jobs:
         id: get-backend-url
         run: echo "BACKEND_URL=$(gcloud run services describe $BACKEND_APP --region $REGION --format='value(status.url)')" >> $GITHUB_ENV
 
-      - name: Inject the Backend URL into the frontend code
+      - name: Inject the Backend URL into the frontend index.html
         run: |
-          sed -i '' "s|let backendUrl;|let backendUrl = '$BACKEND_URL';|g" src/frontend/chat.js
+          sed -i.bak 's|let backendUrl;|let backendUrl = "'$BACKEND_URL'";|g' src/frontend/chat.js
   
       - name: Build and tag the frontend docker image
         run: |-

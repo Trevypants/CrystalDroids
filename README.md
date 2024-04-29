@@ -29,7 +29,8 @@ Requirements:
     - Artifact Registry Admin
     - Cloud Run Admin
     - Cloud Run Service Agent
-    - AI Platform Admin
+    - Vertex AI Admin
+    - Vertex AI User
 3. The service account key in JSON format (stored as a repository secret in `GCP_SERVICE_ACCOUNT_KEY`)
 4. The following repository variables set:
     - `GCP_REGION` (e.g. `europe-west4`)
