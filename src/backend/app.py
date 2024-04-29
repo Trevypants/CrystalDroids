@@ -8,7 +8,8 @@ from litestar import Litestar, get, post, Request, Response, status_codes
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
 
-from google.cloud import firestore, aiplatform
+from google.cloud import firestore
+import vertexai
 from vertexai.preview.generative_models import GenerativeModel
 
 from src.config import settings
@@ -83,9 +84,9 @@ async def app_startup(app: Litestar):
             database=settings.firestore_db,
         )
 
-    # Initialize AI Platform
-    logging.info("Initializing AI Platform...")
-    aiplatform.init(
+    # Initialize Vertex AI
+    logging.info("Initializing Vertex AI...")
+    vertexai.init(
         project=settings.project_id,
         location=settings.location,
     )
