@@ -83,7 +83,7 @@ async def app_startup(app: Litestar):
         project_id == settings.project_id
     ), f"Project ID mismatch: {project_id} != {settings.project_id}"
     logging.info(
-        f"Using project {project_id}, location {settings.location}, and service account {settings.service_account_email}..."
+        f"Using project `{project_id}`, location `{settings.location}`, and service account `{settings.service_account_email}`"
     )
 
     # Initialize Firestore
