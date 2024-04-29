@@ -1,4 +1,4 @@
-const backendUrl = window.BACKEND_URL; // Set dynamically in index.html by CI/CD pipeline
+let backendUrl;
 let userId;
 
 function startChat() {
