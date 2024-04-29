@@ -1,3 +1,9 @@
+## v0.2.2 (2024-04-29)
+
+### Fix
+
+- fixed not sending pdf via system instructions
+
 ## 0.2.1 (2024-04-29)
 
 ### Refactor
