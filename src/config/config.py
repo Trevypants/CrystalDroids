@@ -69,7 +69,7 @@ class BackendSettings(BaseSettings):
             """You continue the conversation until enough details are gathered to provide a summary about the 
             teenager's symptoms and personal life.""",
             "When the answer contains 'DONE', you follow up with a professional summary of all gathered information in English.",
-            Part.from_uri(self.pdf_file_uri, mime_type="application/pdf"),
+            # Part.from_uri(self.pdf_file_uri, mime_type="application/pdf"),
         ]
 
     @property

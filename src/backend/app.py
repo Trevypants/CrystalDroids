@@ -78,7 +78,7 @@ async def app_startup(app: Litestar):
     # Initialize Google Cloud Credentials
     logging.info("Initializing Application...")
 
-    credentials, project_id = google.auth.default()
+    _, project_id = google.auth.default()
     assert (
         project_id == settings.project_id
     ), f"Project ID mismatch: {project_id} != {settings.project_id}"
