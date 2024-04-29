@@ -79,8 +79,11 @@ async def app_startup(app: Litestar):
     logging.info("Initializing Application...")
 
     credentials, project_id = google.auth.default()
+    assert (
+        project_id == settings.project_id
+    ), f"Project ID mismatch: {project_id} != {settings.project_id}"
     logging.info(
-        f"Using project {project_id} and service account {credentials.service_account_email}..."
+        f"Using project {project_id}, location {settings.location}, and service account {settings.service_account_email}..."
     )
 
     # Initialize Firestore

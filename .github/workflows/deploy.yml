@@ -84,7 +84,7 @@ jobs:
           --port 8000 \
           --quiet \
           --allow-unauthenticated \
-          --set-env-vars=PROJECT_ID=$PROJECT_ID,LOCATION=$REGION,FIRESTORE_DB=$FIRESTORE_DB,CLOUD_STORAGE_BUCKET=$PROJECT_ID-$BUCKET_SUFFIX
+          --set-env-vars=PROJECT_ID=$PROJECT_ID,LOCATION=$REGION,SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL,FIRESTORE_DB=$FIRESTORE_DB,CLOUD_STORAGE_BUCKET=$PROJECT_ID-$BUCKET_SUFFIX
  
       - name: Get the Backend API URL
         id: get-backend-url

@@ -39,6 +39,7 @@ class BackendSettings(BaseSettings):
     genai_id: str = "gemini-1.0-pro-002"
     firestore_db: str = "FIRESTORE-DB-GOES-HERE"
     cloud_storage_bucket: str = "gs://BUCKET-URI-GOES-HERE"
+    service_account_email: str = "SERVICE-ACCOUNT-EMAIL-GOES-HERE"
 
     # GenAI Model Settings
     temperature: float = 0.7
