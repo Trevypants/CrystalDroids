@@ -11,7 +11,7 @@ from vertexai.preview.generative_models import (
 )
 
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 class LogLevel(StrEnum):
