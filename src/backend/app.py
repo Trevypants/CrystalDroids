@@ -8,6 +8,7 @@ from litestar import Litestar, get, post, Request, Response, status_codes
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
 
+import google.auth
 from google.cloud import firestore
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel
@@ -74,6 +75,14 @@ async def app_startup(app: Litestar):
     -------
     None
     """
+    # Initialize Google Cloud Credentials
+    logging.info("Initializing Application...")
+
+    credentials, project_id = google.auth.default()
+    logging.info(
+        f"Using project {project_id} and service account {credentials.service_account_email}..."
+    )
+
     # Initialize Firestore
     logging.info(
         f"Initializing database connections to {settings.firestore_db} in project {settings.project_id}..."
