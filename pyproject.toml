@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "crystaldroids"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 authors = [
     "Trevor Visser <trevor.visser@crystalloids.com>",
@@ -23,7 +23,7 @@ pydantic-settings = "^2.2.1"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.2.0"
+version = "0.2.1"
 tag_format = "$version"
 version_scheme = "pep440"
 version_provider = "poetry"

@@ -1,3 +1,16 @@
+## 0.2.1 (2024-04-29)
+
+### Refactor
+
+- adjusting versions in pyproject.toml
+
+## v0.2.0 (2024-04-29)
+
+### Refactor
+
+- added logging to showcase SA and project
+- moved ai platform to vertex ai init
+
 ## 0.2.0 (2024-04-29)
 
 ### Feat
