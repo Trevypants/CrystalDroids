@@ -1,3 +1,9 @@
+## v0.2.3 (2024-04-29)
+
+### Refactor
+
+- backend url injection
+
 ## v0.2.2 (2024-04-29)
 
 ### Fix
