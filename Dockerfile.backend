@@ -32,8 +32,9 @@ RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requi
 
 ## Copy only the necessary files to the working directory
 COPY ./src/backend ./src/backend
-COPY ./src/schemas.py ./src/schemas.py
 COPY ./src/config ./src/config
+COPY ./src/keys ./src/keys
+COPY ./src/schemas.py ./src/schemas.py
 
 ## Run the app using Uvicorn
 CMD ["python", "src/backend/main.py"]
