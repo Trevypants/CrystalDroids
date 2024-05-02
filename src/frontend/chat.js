@@ -20,17 +20,17 @@ async function sendMessage() {
   displayMessage('You', message);
 
   // Send POST request to your Gen AI API endpoint 
-  console.log(`Sending POST request to ${backendUrl}/chat`)
+  console.log(`Sending POST request to ${backendUrl}/chat/${userId}`)
   const response = await fetch(`${backendUrl}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, message: message })
+    body: JSON.stringify({ text: message })
   })
   const data = await response.json();
   console.log(`Received response: ${data}`);
 
   // Display AI response
-  displayMessage('Doctor Fresh', data.response);
+  displayMessage('Doctor Fresh', data.text);
 }
 
 function displayMessage(sender, message) {

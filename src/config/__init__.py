@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from .config import BackendSettings
+from .config import AppSettings, LogLevel  # noqa: F401 (imported but unused)
 
 # Build the correct path to the .env file
 dotenv_path = os.path.join(
@@ -13,4 +13,4 @@ load_dotenv(dotenv_path=dotenv_path)
 
 # Instantiate the Settings class
 # Automatically places the ENV variables into the settings attributes
-settings = BackendSettings()  # type: ignore
+settings = AppSettings()  # type: ignore

@@ -23,14 +23,23 @@ class LogLevel(StrEnum):
     ERROR = "ERROR"
 
 
-class BackendSettings(BaseSettings):
+class AppSettings(BaseSettings):
     """
-    Settings class for the backend application.
+    Settings class for the application.
     Will contain all ENV variables.
     """
 
     # Base
     version: str = VERSION
+    local: bool = False
+
+    # API Settings
+    backend_host: str = "0.0.0.0"
+    backend_port: int = 8000
+
+    # UI Settings
+    frontend_host: str = "0.0.0.0"
+    frontend_port: int = 3000
 
     # GCP Project Settings
     project_id: str = "PROJECT-GOES-HERE"
@@ -48,9 +57,6 @@ class BackendSettings(BaseSettings):
     candidate_count: int = 1
     max_output_tokens: int = 8192
 
-    # Logging
-    log_level: LogLevel = LogLevel.INFO
-
     @property
     def genai_instructions(self) -> list[str]:
         """Get the GenAI model instructions."""
@@ -63,13 +69,12 @@ class BackendSettings(BaseSettings):
             """Your second goal is to gather the information about their personal life, physical and mental 
             symptoms in order to provide the teenager with a heathcare plan.""",
             "The information needs to detailed enough to know the level of severity, ask follow-up questions if needed.",
-            """You initiate the conversation after the initial prompt of 'START' by asking in what language the 
+            """You initiate the conversation after the initial prompt by asking in what language the 
             teenagers want to continue the conversation. Don't provide example languages.""",
             "Keep your responses short and ask one question at a time.",
             """You continue the conversation until enough details are gathered to provide a summary about the 
             teenager's symptoms and personal life.""",
             "When the answer contains 'DONE', you follow up with a professional summary of all gathered information in English.",
-            # Part.from_uri(self.pdf_file_uri, mime_type="application/pdf"),
         ]
 
     @property
@@ -102,3 +107,8 @@ class BackendSettings(BaseSettings):
     def pdf_file_uri(self) -> str:
         """Get the PDF file URI."""
         return f"{self.cloud_storage_bucket}/medical-form.pdf"
+
+    @property
+    def pdf_file(self) -> Part:
+        """Get the PDF file."""
+        return Part.from_uri(self.pdf_file_uri, mime_type="application/pdf")
