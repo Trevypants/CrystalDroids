@@ -1,3 +1,9 @@
+## v0.3.2 (2024-05-02)
+
+### Refactor
+
+- cleaned up config dependencies
+
 ## v0.3.1 (2024-05-02)
 
 ### Fix

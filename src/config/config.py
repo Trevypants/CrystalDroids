@@ -5,7 +5,7 @@ from enum import StrEnum
 from pydantic_settings import BaseSettings
 
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 
 
 class LogLevel(StrEnum):
