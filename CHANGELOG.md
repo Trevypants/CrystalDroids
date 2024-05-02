@@ -1,3 +1,9 @@
+## v0.3.1 (2024-05-02)
+
+### Fix
+
+- fixed keys directory not appearing
+
 ## v0.3.0 (2024-05-02)
 
 ### Feat
