@@ -1,3 +1,37 @@
-FROM nginx:alpine
-COPY ./src/frontend/index.html ./src/frontend/chat.js /usr/share/nginx/html/
-EXPOSE 80
+######### Streamlit App Dockerfile ############
+
+###############################
+######### STAGE BUILD #########
+###############################
+## Set the base image
+FROM python:3.11-slim as builder
+
+## Set /tmp as the current working directory
+WORKDIR /tmp
+
+## Install poetry via pip
+RUN pip install --no-cache-dir --force-reinstall poetry==1.8.2
+
+## Copy pyproject.toml and poetry.lock files (* is included to prevent a crash if poetry.lock is missing)
+COPY ./pyproject.toml ./poetry.lock* /tmp/
+
+## Generate a requirements.txt file 
+RUN poetry export -f requirements.txt --output requirements.txt --only base --only frontend
+
+#############################
+######### STAGE RUN #########
+#############################
+## Set the base image
+FROM python:3.11-slim as runtime
+
+## Copy the requirements.txt file from the previous stage to the current stage
+COPY --from=builder /tmp/requirements.txt ./requirements.txt
+
+## Install the backend dependencies
+RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requirements.txt
+
+## Copy only the necessary files to the working directory
+COPY . .
+
+## Run the app using Streamlit
+CMD ["streamlit", "run", "src/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "3000"]

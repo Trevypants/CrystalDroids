@@ -1,22 +1,22 @@
 """Minimal Litestar application."""
 
-from typing import Any
+import os
 import logging
 
-from litestar import Litestar, get, post, Request, Response, status_codes
+from litestar import Litestar, get, post, delete, Request, Response, status_codes
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
 
 import google.auth
-from google.cloud import firestore
-import vertexai
-from vertexai.preview.generative_models import GenerativeModel
 
-from src.config import settings
-from src.schemas import Role, Message, HistoryEntry, Conversation
+from src.config import settings, LogLevel
+from src.schemas import Message, Conversation, Role
+
+from .db import FirestoreDB
+from .model import ChatBot
 
 logging.basicConfig(
-    level=settings.log_level, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=LogLevel.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
@@ -49,16 +49,31 @@ def internal_server_error_handler(request: Request, exc: Exception) -> Response:
     )
 
 
-def generate_empty_conv():
-    return Conversation(
-        history=[
-            HistoryEntry(role=Role.USER, parts=[Message(text="Hello")]),
-        ],
-        created=firestore.SERVER_TIMESTAMP,
-        updated=firestore.SERVER_TIMESTAMP,
-        summary=None,
-        summary_english=None,
-    )
+def init_gcp_credentials():
+    """This function initializes the Google Cloud Platform credentials.
+    It will check if there is a *.json file in the keys directory and set the
+    GOOGLE_APPLICATION_CREDENTIALS environment variable.
+
+    If the file doesn't exist, it will use the default credentials.
+
+    Returns
+    -------
+    google.auth.credentials.Credentials
+        The Google Cloud Platform credentials.
+    """
+    # Check if there is a *.json file in the keys directory
+    key_file = None
+    for file in os.listdir("src/keys"):
+        if file.endswith(".json"):
+            key_file = file
+            break
+
+    # Load the credentials
+    if key_file is None:
+        logging.warning("No Google Cloud credentials found in the keys directory.")
+    else:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = f"src/keys/{key_file}"
+    return google.auth.default()
 
 
 ### STARTUP ###
@@ -76,10 +91,10 @@ async def app_startup(app: Litestar):
     -------
     None
     """
-    # Initialize Google Cloud Credentials
     logging.info("Initializing Application...")
 
-    _, project_id = google.auth.default()
+    # Initialize Google Cloud Credentials
+    _, project_id = init_gcp_credentials()
     assert (
         project_id == settings.project_id
     ), f"Project ID mismatch: {project_id} != {settings.project_id}"
@@ -92,26 +107,23 @@ async def app_startup(app: Litestar):
         f"Initializing database connections to {settings.firestore_db} in project {settings.project_id}..."
     )
     if not getattr(app.state, "db", None):
-        app.state.db = firestore.Client(
-            project=settings.project_id,
+        app.state.db = FirestoreDB(
+            project_id=settings.project_id,
             database=settings.firestore_db,
+            collection_name="conversations",
         )
-
-    # Initialize Vertex AI
-    logging.info("Initializing Vertex AI...")
-    vertexai.init(
-        project=settings.project_id,
-        location=settings.location,
-    )
 
     # Initialize Generative Model
     logging.info(f"Initializing model {settings.genai_id}...")
-    app.state.model = GenerativeModel(
-        model_name=settings.genai_id,
-        system_instruction=settings.genai_instructions,
-        generation_config=settings.genai_config,
-        safety_settings=settings.genai_safety_config,
-    )
+    if not getattr(app.state, "model", None):
+        app.state.model = ChatBot(
+            project_id=settings.project_id,
+            location=settings.location,
+            genai_id=settings.genai_id,
+            genai_instructions=settings.genai_instructions,
+            genai_config=settings.genai_config,
+            genai_safety_config=settings.genai_safety_config,
+        )
 
 
 ### SHUTDOWN ###
@@ -128,12 +140,12 @@ async def app_shutdown():
 
 
 @get("/")
-async def root() -> dict[str, Any]:
+async def root() -> dict[str, str]:
     """Route Handler that outputs hello world."""
     return {"hello": "world"}
 
 
-@get("/chat/{user_id}")
+@get("/chat/{user_id:str}")
 async def get_chat_history(state: State, user_id: str) -> Conversation:
     """Route Handler that retrieves the chat history for a user.
 
@@ -146,26 +158,43 @@ async def get_chat_history(state: State, user_id: str) -> Conversation:
 
     Returns
     -------
-    list[Conversation]
+    Conversation
         The chat history.
     """
-    db: firestore.Client = state.db
-
-    conversations_ref = db.collection("conversations")
-    doc_ref = conversations_ref.document(user_id)
-
-    try:
-        doc = doc_ref.get()
-        if doc.exists:
-            conversation_data: Conversation = Conversation(**doc.to_dict())
-            return conversation_data
-    except Exception as e:
-        logging.error(f"Error loading conversation for User ID {user_id}: {e}")
-
-    return generate_empty_conv()
+    db: FirestoreDB = state.db
+    return await db.fetch_conversation(user_id=user_id)
 
 
-@post("/chat/{user_id}")
+@post("/test/chat/{user_id:str}")
+async def test_chat(state: State, user_id: str, data: Message) -> Message:
+    """Route Handler that tests the chat with a user. Will respond with the same message.
+    Will not store the conversation in the database.
+
+    Parameters
+    ----------
+    state : State
+        The state of the application.
+    user_id : str
+        The user ID.
+    data : Message
+        The POST request data.
+
+    Returns
+    -------
+    Message
+        The response message.
+    """
+    logging.debug(f"Request: {data}")
+
+    # Generate response
+    logging.debug(f"Echoing response for User ID {user_id}...")
+    response = data
+
+    logging.debug(f"Response: {response.text}")
+    return Message(text=response.text)
+
+
+@post("/chat/{user_id:str}")
 async def chat(state: State, user_id: str, data: Message) -> Message:
     """Route Handler that starts/continues a chat with a user.
 
@@ -183,68 +212,91 @@ async def chat(state: State, user_id: str, data: Message) -> Message:
     Message
         The response message.
     """
-    doctor_fresh: GenerativeModel = state.model
-    db: firestore.Client = state.db
-
-    conversations_ref = db.collection("conversations")
-    doc_ref = conversations_ref.document(user_id)
-
     logging.debug(f"Request: {data}")
 
-    # Empty Conversation Data
-    conversation_data = generate_empty_conv()
+    doctor_fresh: ChatBot = state.model
+    db: FirestoreDB = state.db
 
-    try:
-        # Attempt to retrieve the existing conversation
-        doc = doc_ref.get()
-        if doc.exists:
-            logging.debug(f"Conversation Found for User ID {user_id}")
-            conversation_data: Conversation = Conversation(**doc.to_dict())
-            conversation_data.history.append(
-                HistoryEntry(
-                    role=Role.USER,
-                    parts=[Message(text=f"{data.text}")],
-                )
-            )
-        else:
-            logging.debug(f"Conversation Not Found for User ID {user_id}")
-    except Exception as e:
-        logging.error(f"Error loading conversation for User ID {user_id}: {e}")
-
-    logging.debug(f"Generating response for User ID {user_id}...")
-    response = doctor_fresh.generate_content(
-        conversation_data["history"],
-        generation_config=settings.genai_config,
-        safety_settings=settings.genai_safety_config,
+    # Add user message to history
+    logging.debug(
+        f"Updating conversation for User ID {user_id} with USER message in firestore..."
     )
-    conversation_data.history.append(
-        HistoryEntry(role=Role.MODEL, parts=[Message(text=response.text)])
+    await db.add_message(user_id=user_id, message=data, role=Role.USER)
+
+    # Generate response
+    logging.debug(f"Generating GenAI response for User ID {user_id}...")
+    response = await doctor_fresh.generate_response(
+        conversation=await db.fetch_conversation(user_id=user_id)
     )
 
-    # Update Firestore
-    logging.debug(f"Updating conversation for User ID {user_id}...")
-    doc_ref.set(conversation_data.model_dump())
+    # Add model message to history
+    logging.debug(
+        f"Updating conversation for User ID {user_id} with MODEL message in firestore..."
+    )
+    await db.add_message(user_id=user_id, message=response, role=Role.MODEL)
 
     if "DONE" in response.text or "DONE" in data.text:
-        # Save the summaries
-        conversation_data.summary = response.text
-        response_conversion = doctor_fresh.generate_content(
-            [f"Translate the following text into English: {response.text}"],
-            generation_config=settings.genai_config,
-            safety_settings=settings.genai_safety_config,
+        logging.debug(
+            f"Conversation for User ID {user_id} is DONE! Generating Summary..."
         )
-        conversation_data.summary_english = response_conversion.text
-        doc_ref.set(conversation_data.model_dump())
-        logging.debug(f"Conversation for User ID {user_id} is DONE!")
+        await db.update_conversation(
+            user_id=user_id,
+            conversation_data=await doctor_fresh.add_summary(
+                conversation=await db.fetch_conversation(user_id=user_id)
+            ),
+        )
 
     logging.debug(f"Response: {response.text}")
     return Message(text=response.text)
 
 
+@delete("/chat/{user_id:str}")
+async def delete_chat(state: State, user_id: str) -> None:
+    """Route Handler that deletes the chat history for a user.
+
+    Parameters
+    ----------
+    state : State
+        The state of the application.
+    user_id : str
+        The user ID.
+
+    Returns
+    -------
+    dict[str, Any]
+        The response message.
+    """
+    db: FirestoreDB = state.db
+    await db.delete_conversation(user_id=user_id)
+
+
+@delete("/chat")
+async def delete_all_chats(state: State) -> None:
+    """Route Handler that deletes all chat histories.
+
+    Parameters
+    ----------
+    state : State
+        The state of the application.
+
+    Returns
+    -------
+    dict[str, str]
+        The response message.
+    """
+    db: FirestoreDB = state.db
+    await db.clear_collection(batch_size=100)
+
+
+# Initialize the Litestar app
 app = Litestar(
     route_handlers=[
         root,
+        get_chat_history,
         chat,
+        delete_chat,
+        delete_all_chats,
+        test_chat,
     ],
     on_startup=[app_startup],
     on_shutdown=[app_shutdown],

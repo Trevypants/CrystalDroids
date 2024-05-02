@@ -3,7 +3,7 @@
 ###############################
 ######### STAGE BUILD #########
 ###############################
-## Set the base image using Python 3.12 and Debian Bookworm
+## Set the base image
 FROM python:3.11-slim as builder
 
 ## Set /tmp as the current working directory
@@ -21,7 +21,7 @@ RUN poetry export -f requirements.txt --output requirements.txt --only base --on
 #############################
 ######### STAGE RUN #########
 #############################
-## Set the base image using Python 3.12 and Debian Bookworm
+## Set the base image
 FROM python:3.11-slim as runtime
 
 ## Copy the requirements.txt file from the previous stage to the current stage
@@ -33,8 +33,5 @@ RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requi
 ## Copy only the necessary files to the working directory
 COPY . .
 
-## Expose the port the app runs on
-EXPOSE 8000
-
-## Run the app with the Litestar CLI
-CMD ["uvicorn", "src.backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+## Run the app using Uvicorn
+CMD ["python", "src/backend/main.py"]

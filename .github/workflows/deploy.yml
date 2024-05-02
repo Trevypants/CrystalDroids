@@ -90,10 +90,6 @@ jobs:
       - name: Get the Backend API URL
         id: get-backend-url
         run: echo "BACKEND_URL=$(gcloud run services describe $BACKEND_APP --region $REGION --format='value(status.url)')" >> $GITHUB_ENV
-
-      - name: Inject the Backend URL into the frontend index.html
-        run: |
-          sed -i.bak 's|let backendUrl;|let backendUrl = "'$BACKEND_URL'";|g' src/frontend/chat.js
   
       - name: Build and tag the frontend docker image
         run: |-
@@ -112,4 +108,5 @@ jobs:
           --service-account $SERVICE_ACCOUNT_EMAIL \
           --port 80 \
           --quiet \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars=BACKEND_HOST=$BACKEND_URL
