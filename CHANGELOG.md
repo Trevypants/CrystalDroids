@@ -1,3 +1,10 @@
+## v0.3.0 (2024-05-02)
+
+### Feat
+
+- added async to backend; moved to streamlit in frontend
+- added api route to fetch entire conversation
+
 ## v0.2.3 (2024-04-29)
 
 ### Refactor
