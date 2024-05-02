@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --force-reinstall poetry==1.8.2
 COPY ./pyproject.toml ./poetry.lock* /tmp/
 
 ## Generate a requirements.txt file 
-RUN poetry export -f requirements.txt --output requirements.txt
+RUN poetry export -f requirements.txt --output requirements.txt --only base --only backend
 
 #############################
 ######### STAGE RUN #########

@@ -3,7 +3,6 @@
 from typing import Any
 import logging
 
-from pydantic import BaseModel
 from litestar import Litestar, get, post, Request, Response, status_codes
 from litestar.datastructures import State
 from litestar.config.cors import CORSConfig
@@ -14,17 +13,11 @@ import vertexai
 from vertexai.preview.generative_models import GenerativeModel
 
 from src.config import settings
+from src.schemas import Role, Message, HistoryEntry, Conversation
 
 logging.basicConfig(
     level=settings.log_level, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-
-class UserMessage(BaseModel):
-    """Basic POST request model."""
-
-    user_id: str
-    message: str
 
 
 def internal_server_error_handler(request: Request, exc: Exception) -> Response:
@@ -50,13 +43,21 @@ def internal_server_error_handler(request: Request, exc: Exception) -> Response:
             "reason": str(exc),
         }
     )
-    # return Response(
-    #     status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
-    #     content={"detail": str(exc)},
-    # )
     return Response(
         status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Internal Server Error"},
+    )
+
+
+def generate_empty_conv():
+    return Conversation(
+        history=[
+            HistoryEntry(role=Role.USER, parts=[Message(text="Hello")]),
+        ],
+        created=firestore.SERVER_TIMESTAMP,
+        updated=firestore.SERVER_TIMESTAMP,
+        summary=None,
+        summary_english=None,
     )
 
 
@@ -132,86 +133,112 @@ async def root() -> dict[str, Any]:
     return {"hello": "world"}
 
 
-@post("/chat")
-async def chat(state: State, data: UserMessage) -> dict[str, str]:
+@get("/chat/{user_id}")
+async def get_chat_history(state: State, user_id: str) -> Conversation:
+    """Route Handler that retrieves the chat history for a user.
+
+    Parameters
+    ----------
+    state : State
+        The state of the application.
+    user_id : str
+        The user ID.
+
+    Returns
+    -------
+    list[Conversation]
+        The chat history.
+    """
+    db: firestore.Client = state.db
+
+    conversations_ref = db.collection("conversations")
+    doc_ref = conversations_ref.document(user_id)
+
+    try:
+        doc = doc_ref.get()
+        if doc.exists:
+            conversation_data: Conversation = Conversation(**doc.to_dict())
+            return conversation_data
+    except Exception as e:
+        logging.error(f"Error loading conversation for User ID {user_id}: {e}")
+
+    return generate_empty_conv()
+
+
+@post("/chat/{user_id}")
+async def chat(state: State, user_id: str, data: Message) -> Message:
     """Route Handler that starts/continues a chat with a user.
 
     Parameters
     ----------
     state : State
         The state of the application.
-    data : UserMessage
+    user_id : str
+        The user ID.
+    data : Message
         The POST request data.
 
     Returns
     -------
-    dict[str, str]
-        The response. Will have the following format: {"response": str}
+    Message
+        The response message.
     """
-    doctor_fresh: GenerativeModel = app.state.model
-    db: firestore.Client = app.state.db
+    doctor_fresh: GenerativeModel = state.model
+    db: firestore.Client = state.db
 
     conversations_ref = db.collection("conversations")
-    doc_ref = conversations_ref.document(data.user_id)
+    doc_ref = conversations_ref.document(user_id)
 
-    logging.info(f"Request: {data}")
+    logging.debug(f"Request: {data}")
+
+    # Empty Conversation Data
+    conversation_data = generate_empty_conv()
 
     try:
         # Attempt to retrieve the existing conversation
         doc = doc_ref.get()
         if doc.exists:
-            logging.info(f"Conversation Found for User ID {data.user_id}")
-            conversation_data = doc.to_dict()
-            conversation_data["history"].append(
-                {"role": "user", "parts": [{"text": f"{data.message}"}]}
+            logging.debug(f"Conversation Found for User ID {user_id}")
+            conversation_data: Conversation = Conversation(**doc.to_dict())
+            conversation_data.history.append(
+                HistoryEntry(
+                    role=Role.USER,
+                    parts=[Message(text=f"{data.text}")],
+                )
             )
         else:
-            logging.info(f"Conversation Not Found for User ID {data.user_id}")
-            conversation_data = {
-                "history": [
-                    {"role": "user", "parts": [{"text": f"START. {data.message}"}]}
-                ],
-                "created": firestore.SERVER_TIMESTAMP,
-                "updated": firestore.SERVER_TIMESTAMP,
-            }  # Start a fresh conversation
+            logging.debug(f"Conversation Not Found for User ID {user_id}")
     except Exception as e:
-        logging.error(f"Error loading conversation for User ID {data.user_id}: {e}")
-        conversation_data = {
-            "history": [
-                {"role": "user", "parts": [{"text": f"START. {data.message}"}]}
-            ],
-            "created": firestore.SERVER_TIMESTAMP,
-            "updated": firestore.SERVER_TIMESTAMP,
-        }
+        logging.error(f"Error loading conversation for User ID {user_id}: {e}")
 
-    logging.info(f"Generating response for User ID {data.user_id}...")
+    logging.debug(f"Generating response for User ID {user_id}...")
     response = doctor_fresh.generate_content(
         conversation_data["history"],
         generation_config=settings.genai_config,
         safety_settings=settings.genai_safety_config,
     )
-    conversation_data["history"].append(
-        {"role": "model", "parts": [{"text": response.text}]}
+    conversation_data.history.append(
+        HistoryEntry(role=Role.MODEL, parts=[Message(text=response.text)])
     )
 
     # Update Firestore
-    logging.info(f"Updating conversation for User ID {data.user_id}...")
-    doc_ref.set(conversation_data)
+    logging.debug(f"Updating conversation for User ID {user_id}...")
+    doc_ref.set(conversation_data.model_dump())
 
-    if "DONE" in response.text or "DONE" in data.message:
-        # save the summary
-        conversation_data["summary"] = response.text
+    if "DONE" in response.text or "DONE" in data.text:
+        # Save the summaries
+        conversation_data.summary = response.text
         response_conversion = doctor_fresh.generate_content(
             [f"Translate the following text into English: {response.text}"],
             generation_config=settings.genai_config,
             safety_settings=settings.genai_safety_config,
         )
-        conversation_data["summary_english"] = response_conversion.text
-        doc_ref.set(conversation_data)
-        logging.info(f"Conversation for User ID {data.user_id} is DONE!")
+        conversation_data.summary_english = response_conversion.text
+        doc_ref.set(conversation_data.model_dump())
+        logging.debug(f"Conversation for User ID {user_id} is DONE!")
 
-    logging.info(f"Response: {response.text}")
-    return {"response": response.text}
+    logging.debug(f"Response: {response.text}")
+    return Message(text=response.text)
 
 
 app = Litestar(

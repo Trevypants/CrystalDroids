@@ -13,13 +13,22 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.7.0"
+commitizen = "^3.24.0"
+
+[tool.poetry.group.base.dependencies]
+pydantic = "^2.7.1"
+pydantic-settings = "^2.2.1"
+
+[tool.poetry.group.backend.dependencies]
 google-cloud-aiplatform = "^1.48.0"
 google-cloud-firestore = "^2.16.0"
 litestar = { extras = ["standard"], version = "^2.8.2" }
-pre-commit = "^3.7.0"
-commitizen = "^3.24.0"
-pydantic = "^2.7.1"
-pydantic-settings = "^2.2.1"
+
+[tool.poetry.group.frontend.dependencies]
+streamlit = "^1.33.0"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
