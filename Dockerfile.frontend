@@ -31,7 +31,9 @@ COPY --from=builder /tmp/requirements.txt ./requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requirements.txt
 
 ## Copy only the necessary files to the working directory
-COPY . .
+COPY ./src/frontend ./src/frontend
+COPY ./src/schemas.py ./src/schemas.py
+COPY ./src/config ./src/config
 
 ## Run the app using Streamlit
 CMD ["streamlit", "run", "src/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "3000"]

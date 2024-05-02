@@ -14,7 +14,7 @@ Backend is hosted on Cloud Run in a Python web application that connects to Goog
 
 ## Frontend
 
-Frontend is hosted on Cloud Run in a Javascript application that communicates with the backend.
+Frontend is hosted on Cloud Run in a Python ui application that communicates with the backend.
 
 ## Deploy
 

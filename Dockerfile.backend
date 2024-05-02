@@ -31,7 +31,9 @@ COPY --from=builder /tmp/requirements.txt ./requirements.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requirements.txt
 
 ## Copy only the necessary files to the working directory
-COPY . .
+COPY ./src/backend ./src/backend
+COPY ./src/schemas.py ./src/schemas.py
+COPY ./src/config ./src/config
 
 ## Run the app using Uvicorn
 CMD ["python", "src/backend/main.py"]
