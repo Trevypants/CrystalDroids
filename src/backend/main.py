@@ -12,7 +12,7 @@ sys.path.append(".")
 # set event loop policy
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())  # type: ignore
 
-from src.config import settings
+from src.backend.config import settings
 from src.backend.app import app  # noqa: F401 (imported but unused)
 
 

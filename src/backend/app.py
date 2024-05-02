@@ -9,7 +9,8 @@ from litestar.config.cors import CORSConfig
 
 import google.auth
 
-from src.config import settings, LogLevel
+from src.backend.config import settings
+from src.config import LogLevel
 from src.schemas import Message, Conversation, Role
 
 from .db import FirestoreDB

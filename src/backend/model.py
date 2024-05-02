@@ -7,7 +7,7 @@ from vertexai.preview.generative_models import (
 )
 
 from src.schemas import Conversation, Message
-from src.config import settings
+from src.backend.config import settings
 
 
 class ChatBot:

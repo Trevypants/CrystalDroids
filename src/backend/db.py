@@ -3,7 +3,7 @@ import datetime
 
 from google.cloud import firestore
 
-from src.config import settings
+from src.backend.config import settings
 from src.schemas import Role, Message, Conversation, generate_empty_conv
 
 

@@ -6,7 +6,7 @@ import streamlit as st
 sys.path.append(".")
 
 from src.schemas import Role, Message, Conversation
-from src.config import settings
+from src.frontend.config import settings
 
 
 ROLE_CONV = {
