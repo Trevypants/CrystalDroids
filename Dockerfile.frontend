@@ -27,11 +27,14 @@ FROM python:3.11-slim as runtime
 ## Copy the requirements.txt file from the previous stage to the current stage
 COPY --from=builder /tmp/requirements.txt ./requirements.txt
 
-## Install the backend dependencies
+## Install the frontend dependencies
 RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requirements.txt
 
 ## Copy only the necessary files to the working directory
 COPY . .
+
+## Expose the port the app runs on
+EXPOSE 3000
 
 ## Run the app using Streamlit
 CMD ["streamlit", "run", "src/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "3000"]

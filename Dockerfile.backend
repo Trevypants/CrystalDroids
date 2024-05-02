@@ -33,5 +33,8 @@ RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r ./requi
 ## Copy only the necessary files to the working directory
 COPY . .
 
+## Expose the port the app runs on
+EXPOSE 8000
+
 ## Run the app using Uvicorn
 CMD ["python", "src/backend/main.py"]
