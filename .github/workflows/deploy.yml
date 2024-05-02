@@ -106,7 +106,7 @@ jobs:
           --image $REGION-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REGISTRY/$FRONTEND_APP:$GITHUB_SHA \
           --platform "managed" \
           --service-account $SERVICE_ACCOUNT_EMAIL \
-          --port 80 \
+          --port 3000 \
           --quiet \
           --allow-unauthenticated \
           --set-env-vars=BACKEND_HOST=$BACKEND_URL
