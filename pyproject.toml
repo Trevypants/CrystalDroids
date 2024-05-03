@@ -8,7 +8,6 @@ authors = [
     "Ibrahim Atli <ibrahim.atli@crystalloids.com>",
 ]
 readme = "README.md"
-packages = [{ include = "src" }]
 package-mode = false
 
 [tool.poetry.dependencies]
