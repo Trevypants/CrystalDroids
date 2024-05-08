@@ -36,7 +36,3 @@ chmod +x .git/hooks/prepare-commit-msg
 echo "Setting up post-commit hooks..."
 wget -O .git/hooks/post-commit https://raw.githubusercontent.com/commitizen-tools/commitizen/master/hooks/post-commit.py
 chmod +x .git/hooks/post-commit
-
-# 8. Set up artificial certificates for local development
-echo "Setting up artificial certificates for local development..."
-mkcert -key-file deploy/local/certificates/key.pem -cert-file deploy/local/certificates/cert.pem localhost 127.0.0.1 0.0.0.0 ::1

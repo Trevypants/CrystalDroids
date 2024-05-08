@@ -32,12 +32,9 @@ check_and_install "git" "brew install git"
 # 4. Install gh
 check_and_install "gh" "brew install gh"
 
-# 7. Install mkcert
-check_and_install "mkcert" "brew install mkcert"
-
-# 8. Install pyenv
+# 7. Install pyenv
 check_and_install "pyenv" "brew install pyenv"
 
-# 9. Install poetry
+# 8. Install poetry
 check_and_install "poetry" "curl -sSL https://install.python-poetry.org | python3 -"
 
