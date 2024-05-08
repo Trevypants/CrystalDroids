@@ -1,40 +1,44 @@
 #!/bin/bash
 
-# Function to check if a package is installed and install if necessary
-function check_and_install() {
-    package_name=$1
-    install_command=$2
+# Function to execute an installation script
+function execute_install_script() {
+    script_path=$1
+    use_sudo=$2  # Flag to determine if 'sudo' should be used
 
-    if ! command -v "$package_name" &> /dev/null; then
-        echo "$package_name not found. Installing..."
-        if ! $install_command; then
-            echo "Error: Failed to install $package_name"
-            exit 1
+    if [ -f "$script_path" ]; then
+        echo "Executing installation script: $script_path"
+        if $use_sudo; then
+            sudo bash "$script_path"
+        else
+            bash "$script_path"
         fi
-        echo "$package_name installed successfully"
     else
-        echo "$package_name is already installed"
+        echo "Error: Installation script not found at $script_path"
+        exit 1
     fi
 }
 
+# Detect the operating system and check for sudo
+OS=$(uname -s)
 
-# ***** MAIN SETUP SCRIPT *****
+if command -v sudo &> /dev/null; then  
+    has_sudo=true
+else
+    has_sudo=false
+fi
 
-# 1. Install Homebrew if not already present
-check_and_install "brew" "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-
-# 2. Install wget
-check_and_install "wget" "brew install wget"
-
-# 3. Install git
-check_and_install "git" "brew install git"
-
-# 4. Install gh
-check_and_install "gh" "brew install gh"
-
-# 7. Install pyenv
-check_and_install "pyenv" "brew install pyenv"
-
-# 8. Install poetry
-check_and_install "poetry" "curl -sSL https://install.python-poetry.org | python3 -"
-
+case "$OS" in
+    "Darwin") 
+        execute_install_script "scripts/os/setup_deps_macos.sh" false
+        ;;
+    "Linux")
+        execute_install_script "scripts/os/setup_deps_linux.sh" $has_sudo
+        ;;
+    "MINGW64"* | "CYGWIN"* | "MSYS"*)  # Covers different Windows environments
+        powershell.exe -File "scripts/os/setup_deps_windows.ps1" -ExecutionPolicy Bypass -Scope Process -Force
+        ;;
+    *)
+        echo "Unsupported operating system: $OS"
+        exit 1
+        ;;
+esac
